@@ -2,28 +2,67 @@
 <html>
 <body>
 
-<canvas id="myCanvas" width="500" height="500" style="border:1px solid grey"></canvas>
+<canvas id="myCanvas" width="1000" height="500" style="border:1px solid grey"></canvas>
 
 <script>
-const c = document.getElementById("myCanvas");
-const ctx = c.getContext("2d");
-ctx.fillRect(20, 20, 150, 100);
-x=0
-y=0
-window.requestAnimationFrame(function loop() {
-    x+=0.1
-  ctx.clearRect(0, 0, c.width, c.height)
+// Get canvas context
+const ces = document.getElementById("myCanvas");
+const ctx = ces.getContext("2d");
 
-  ctx.fillStyle = 'red'
-  ctx.fillRect(x, 0, 100, 100)
+const Nx = 500;       
+const dx = 1;          
+const c = 1;           
+const dt = dx / c;     
+const C2 = 1.0;        
 
-  ctx.fillStyle = 'green'
-  ctx.fillRect(200, y, 100, 100)
+let u_1 = new Array(Nx).fill(0);   // t - dt
+let u_2 = new Array(Nx).fill(0);   // t
+let u_3 = new Array(Nx).fill(0);   // t + dt
 
-  window.requestAnimationFrame(loop)
-})
+//intial condition: a sine wave packet in the middle
+for (let i = 200; i < 300; i++) {
+  u_1[i] = Math.sin((i - 200) * Math.PI / 100);
+}
+// First time step
+u_2[0] = 0;
+u_2[Nx-1] = 0;
+for (let i = 1; i < Nx-1; i++) {
+  u_2[i] = u_1[i] + 0.5 * C2 * (u_1[i+1] - 2*u_1[i] + u_1[i-1]);
+}
 
-</script> 
+//update function
+function update() {
+  for (let i = 1; i < Nx-1; i++) {
+    u_3[i] = 2*u_2[i] - u_1[i] + C2 * (u_2[i+1] - 2*u_2[i] + u_2[i-1]); // Wave equation finite difference
+  }
+  // Boundary conditions
+  u_3[0] = 0;
+  u_3[Nx-1] = 0;
+  // Swap arrays
+  let temp = u_1;
+  u_1 = u_2;
+  u_2 = u_3;
+  u_3 = temp;
+}
+
+// Draw function
+function draw() {
+  ctx.clearRect(0, 0, 1000, 500);
+  const baseline = 250;
+  for (let i = 0; i < Nx; i++) {
+    ctx.fillStyle = 'red';
+    ctx.fillRect(2*i, baseline - u_2[i]*100, 2, 2);
+  }
+}
+
+// Animation loop
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
 
 </body>
 </html>
