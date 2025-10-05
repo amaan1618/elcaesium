@@ -1,5 +1,20 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Simulation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #d4fff9;
+        }
+    </style>
+</head>
 <body>
 
 <canvas id="myCanvas" width="1000" height="500" style="border:1px solid grey"></canvas>
@@ -19,10 +34,15 @@ let u_1 = new Array(Nx).fill(0);   // t - dt
 let u_2 = new Array(Nx).fill(0);   // t
 let u_3 = new Array(Nx).fill(0);   // t + dt
 
-//intial condition: a sine wave packet in the middle
-for (let i = 200; i < 300; i++) {
-  u_1[i] = Math.sin((i - 200) * Math.PI / 100);
+u_1[0] = 0;
+u_1[Nx] = 0;
+for (let i = 1; i < Nx; i++) {
+    let x = i / Nx;           // normalize to [0,1]
+    let center = 0.5;         // peak at middle
+    let width = 0.2;          // controls spread (0.2 = fairly wide)
+    u_1[i] = Math.exp(- ((x - center) ** 2) / (2 * width ** 2));
 }
+
 // First time step
 u_2[0] = 0;
 u_2[Nx-1] = 0;
@@ -50,8 +70,12 @@ function draw() {
   ctx.clearRect(0, 0, 1000, 500);
   const baseline = 250;
   for (let i = 0; i < Nx; i++) {
-    ctx.fillStyle = 'red';
-    ctx.fillRect(2*i, baseline - u_2[i]*100, 2, 2);
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "pink";
+    ctx.moveTo(2*i, u_2[i]*150 + 250);
+    ctx.lineTo(2*i+2.5, u_2[i+1]*150 + 250);
+    ctx.stroke();
   }
 }
 

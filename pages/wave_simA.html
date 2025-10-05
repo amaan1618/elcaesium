@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2D Wave Simulation - YDSE</title>
+</head>
+<body>
+<canvas id="myCanvas" style="border:1px solid black"></canvas>
+
+<script>
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+
+// Simulation grid size
+const Nx = 400, Ny = 2*120;
+const scale = 2; // pixels per grid cell
+canvas.width = Nx * scale;
+canvas.height = Ny * scale;
+
+// Wave parameters
+const c = 1;
+const dx = 1, dy = 1;
+const dt = 0.5;
+const C2 = (c * dt / dx) ** 2;
+
+// Arrays
+function make2D(nx, ny) {
+    return Array.from({length: nx}, () => new Float32Array(ny));
+}
+let u_prev = make2D(Nx, Ny);
+let u_curr = make2D(Nx, Ny);
+let u_next = make2D(Nx, Ny);
+
+let time = 0;
+
+// Update wave field
+function update() {
+    for (let i = 1; i < Nx-1; i++) {
+        for (let j = 1; j < Ny-1; j++) {
+            u_next[i][j] = 2*u_curr[i][j] - u_prev[i][j] + C2 * (
+                u_curr[i+1][j] + u_curr[i-1][j] +
+                u_curr[i][j+1] + u_curr[i][j-1] -
+                4*u_curr[i][j]
+            );
+        }
+    }
+
+    // ---- Source ----
+    let freq = 0.15;
+    let amp = Math.sin(time * freq) * 1.0;
+    u_next[20][Ny/2] = amp;
+
+    // ---- Wall with two slits ----
+    let wallX = Math.floor(Nx/3);
+    for (let j = 0; j < Ny; j++) {
+        u_next[wallX][j] = 0; // block wall
+    }
+    // two slits
+    let slitSize = 6;
+    let gap = 25;
+    for (let dj = -slitSize; dj <= slitSize; dj++) {
+        u_next[wallX][Ny/2 - gap + dj] = u_curr[wallX-1][Ny/2 - gap + dj];
+        u_next[wallX][Ny/2 + gap + dj] = u_curr[wallX-1][Ny/2 + gap + dj];
+    }
+
+    // Rotate arrays
+    [u_prev, u_curr, u_next] = [u_curr, u_next, u_prev];
+
+    time++;
+}
+
+// Draw scaled
+function draw() {
+    let image = ctx.createImageData(Nx, Ny);
+    for (let i = 0; i < Nx; i++) {
+        for (let j = 0; j < Ny; j++) {
+            let val = u_curr[i][j];
+            let color = Math.floor((val + 1) * 127.5); // [-1,1] → [0,255]
+            let idx = 4 * (j * Nx + i);
+            image.data[idx] = color;
+            image.data[idx+1] = color;
+            image.data[idx+2] = color;
+            image.data[idx+3] = 255;
+        }
+    }
+    // scale up
+    let offscreen = document.createElement("canvas");
+    offscreen.width = Nx;
+    offscreen.height = Ny;
+    offscreen.getContext("2d").putImageData(image, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(offscreen, 0, 0, Nx*scale, Ny*scale);
+
+    // draw wall line
+    ctx.fillStyle = "blue";
+    ctx.fillRect((Nx/3)*scale, 0, 2, Ny*scale);
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
