@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="500" height="500" style="border:1px solid grey"></canvas>
+
+<script>
+const c = document.getElementById("myCanvas");
+const ctx = c.getContext("2d");
+ctx.fillRect(20, 20, 150, 100);
+x=0
+y=0
+window.requestAnimationFrame(function loop() {
+    x+=0.1
+  ctx.clearRect(0, 0, c.width, c.height)
+
+  ctx.fillStyle = 'red'
+  ctx.fillRect(x, 0, 100, 100)
+
+  ctx.fillStyle = 'green'
+  ctx.fillRect(200, y, 100, 100)
+
+  window.requestAnimationFrame(loop)
+})
+
+</script> 
+
+</body>
+</html>

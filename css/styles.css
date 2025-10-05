@@ -63,3 +63,44 @@ footer {
     color: #888;
     font-size: 0.95em;
 }
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #333;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  box-sizing: border-box; /* important: keeps padding inside width */
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;       /* allow wrapping instead of overflow */
+  max-width: 100%;       /* don’t let it grow beyond the navbar */
+  box-sizing: border-box;
+}
+
+.navbar a {
+  color: white;
+  text-decoration: none;
+  margin-left: 1rem;
+  white-space: nowrap;   /* keeps each link intact */
+}
+
+
+    .navbar a:hover {
+      color: #f39c12; /* highlight color */
+    }
+
+    /* Add padding to page so content doesn't hide under navbar */
+    .content {
+      padding-top: 60px;
+    }
+    
+    
