@@ -50,7 +50,7 @@ function update() {
     let amp = Math.sin(time * freq) * 1.0;
     u_next[80][Math.floor(Ny/3)] = amp;
 
-/*
+
     // ---- Wall with two slits ----
     let wallX = Math.floor(Nx/3);
     for (let j = 0; j < Ny; j++) {
@@ -62,22 +62,6 @@ function update() {
     for (let dj = -slitSize; dj <= slitSize; dj++) {
         u_next[wallX][Ny/2 - gap + dj] = u_curr[wallX-1][Ny/2 - gap + dj];
         u_next[wallX][Ny/2 + gap + dj] = u_curr[wallX-1][Ny/2 + gap + dj];
-    }
-*/
-    // ---- Parabolic mirrors ----
-    // Mirror 1: y = 0.02*(j - Ny/2)^2 + 40
-    // Mirror 2: y = -0.02*(j - Ny/2)^2 + (Ny - 40)
-
-    for (let i = 0; i < Nx; i++) {
-        let y1 = Math.floor(0.01*(i-80)**2 + Ny/3);
-        let y2 = Math.floor(-0.01*(i-(Nx-80))**2 + 2*Ny/3);
-
-        if (y1 >= 0 && y1 < Ny) {
-            u_next[i][y1] = 0; // rigid boundary
-        }
-        if (y2 >= 0 && y2 < Ny) {
-            u_next[i][y2] = 0;
-        }
     }
 
     // Rotate arrays
@@ -108,20 +92,7 @@ function draw() {
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(offscreen, 0, 0, Nx*scale, Ny*scale);
 
-    // draw wall line
-        // draw mirrors
-    ctx.fillStyle = "blue";
-    for (let i = 0; i < Nx; i++) {
-        let y1 = Math.floor(0.01*(i-80)**2 + Ny/3);
-        let y2 = Math.floor(-0.01*(i-(Nx-80))**2 + 2*Ny/3);
 
-        if (y1 >= 0 && y1 < Ny) {
-            ctx.fillRect(i*scale, y1*scale, scale, scale);
-        }
-        if (y2 >= 0 && y2 < Ny) {
-            ctx.fillRect(i*scale, y2*scale, scale, scale);
-        }
-    }
 
 }
 
