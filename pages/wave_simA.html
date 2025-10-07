@@ -1,107 +1,166 @@
-
 <!DOCTYPE html>
 <html>
-<head>
-  <title>2D Wave Simulation - YDSE</title>
-</head>
-<body>
-<canvas id="myCanvas" style="border:1px solid black"></canvas>
+  <head>
+    <title>2D Wave Simulation - YDSE</title>
+  </head>
+  <body>
+    <canvas id="myCanvas" style="border: 1px solid black"></canvas>
+    <br />
+    <button id="resetButton">Reset</button>
+    <button id="randomButton">Random C</button>
+    <button id="wallButton">Border Wall</button>
+    <script>
+      const canvas = document.getElementById("myCanvas");
+      const resetButton = document.getElementById("resetButton");
+      const ctx = canvas.getContext("2d");
 
-<script>
-const canvas = document.getElementById("myCanvas");
-const ctx = canvas.getContext("2d");
+      // Simulation grid size
+      const Nx = 2 * 400,
+        Ny = 4 * 120;
+      const scale = 1; // pixels per grid cell
+      canvas.width = Nx * scale;
+      canvas.height = Ny * scale;
 
-// Simulation grid size
-const Nx = 400, Ny = 2*120;
-const scale = 2; // pixels per grid cell
-canvas.width = Nx * scale;
-canvas.height = Ny * scale;
+      // Wave parameters
+      let randC = false;
+      let bord = true;
+      let c = 1;
+      const dx = 1,
+        dy = 1;
+      const dt = 0.5;
+      let C2 = ((c * dt) / dx) ** 2;
 
-// Wave parameters
-const c = 1;
-const dx = 1, dy = 1;
-const dt = 0.5;
-const C2 = (c * dt / dx) ** 2;
+      // Arrays
+      function make2D(nx, ny) {
+        return Array.from({ length: nx }, () => new Float32Array(ny));
+      }
+      let u_prev = make2D(Nx, Ny);
+      let u_curr = make2D(Nx, Ny);
+      let u_next = make2D(Nx, Ny);
 
-// Arrays
-function make2D(nx, ny) {
-    return Array.from({length: nx}, () => new Float32Array(ny));
-}
-let u_prev = make2D(Nx, Ny);
-let u_curr = make2D(Nx, Ny);
-let u_next = make2D(Nx, Ny);
+      let time = 0;
 
-let time = 0;
+      // Store all active sources
+      let sources = [];
 
-// Update wave field
-function update() {
-    for (let i = 1; i < Nx-1; i++) {
-        for (let j = 1; j < Ny-1; j++) {
-            u_next[i][j] = 2*u_curr[i][j] - u_prev[i][j] + C2 * (
-                u_curr[i+1][j] + u_curr[i-1][j] +
-                u_curr[i][j+1] + u_curr[i][j-1] -
-                4*u_curr[i][j]
-            );
+      function resetSim() {
+        c = 1;
+        sources = [];
+        time = 0;
+        u_prev = make2D(Nx, Ny);
+        u_curr = make2D(Nx, Ny);
+        u_next = make2D(Nx, Ny);
+      }
+      resetButton.addEventListener("click", resetSim);
+      function randomC() {
+        randC = !randC;
+      }
+      randomButton.addEventListener("click", randomC);
+      function border() {
+        bord = !bord;
+      }
+      wallButton.addEventListener("click", border);
+      // Add a new source each time user clicks
+      canvas.addEventListener("click", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const i = Math.floor((x / canvas.width) * Nx);
+        const j = Math.floor((y / canvas.height) * Ny);
+
+        // Push a new source object
+        sources.push({
+          i: i,
+          j: j,
+          freq: 0.15, // can randomize if you want
+          startTime: time, // so they don’t all start in phase
+        });
+      });
+
+      // Update wave field
+      function update() {
+        if (randC) {
+          C2 = Math.abs(Math.sin(time * 0.001) + 0.2);
         }
-    }
+        // Finite difference update
+        if (!bord) {
+          for (let i = 0; i < Nx; i++) {
+            u_next[i][0] = u_prev[i][1];
+          }
+          for (let i = 0; i < Ny; i++) {
+            u_next[0][i] = u_prev[1][i];
+          }
+        }
+        for (let i = 1; i < Nx - 1; i++) {
+          for (let j = 1; j < Ny - 1; j++) {
+            u_next[i][j] =
+              2 * u_curr[i][j] -
+              u_prev[i][j] +
+              C2 *
+                (u_curr[i + 1][j] +
+                  u_curr[i - 1][j] +
+                  u_curr[i][j + 1] +
+                  u_curr[i][j - 1] -
+                  4 * u_curr[i][j]);
+          }
+        }
+        // Add sources
+        for (let s of sources) {
+          let amp = Math.sin((time - s.startTime) * s.freq) * 1.0;
+          u_next[s.i][s.j] += amp;
+        }
 
-    // ---- Source ----
-    let freq = 0.15;
-    let amp = Math.sin(time * freq) * 1.0;
-    u_next[80][Math.floor(Ny/3)] = amp;
-
-
-    // ---- Wall with two slits ----
-    let wallX = Math.floor(Nx/3);
-    for (let j = 0; j < Ny; j++) {
-        u_next[wallX][j] = 0; // block wall
-    }
-    // two slits
-    let slitSize = 6;
-    let gap = 25;
-    for (let dj = -slitSize; dj <= slitSize; dj++) {
-        u_next[wallX][Ny/2 - gap + dj] = u_curr[wallX-1][Ny/2 - gap + dj];
-        u_next[wallX][Ny/2 + gap + dj] = u_curr[wallX-1][Ny/2 + gap + dj];
-    }
-
-    // Rotate arrays
-    [u_prev, u_curr, u_next] = [u_curr, u_next, u_prev];
-
-    time++; 
-}
-//chnage
-// Draw scaled
-function draw() {
-    let image = ctx.createImageData(Nx, Ny);
-    for (let i = 0; i < Nx; i++) {
+        // ---- Wall with two slits ----
+        let wallX = Math.floor(Nx / 3);
         for (let j = 0; j < Ny; j++) {
+          u_next[wallX][j] = 0; // block wall
+        }
+        // two slits
+        let slitSize = 6;
+        let gap = 25;
+        for (let dj = -slitSize; dj <= slitSize; dj++) {
+          u_next[wallX][Ny / 2 - gap + dj] =
+            u_curr[wallX - 1][Ny / 2 - gap + dj];
+          u_next[wallX][Ny / 2 + gap + dj] =
+            u_curr[wallX - 1][Ny / 2 + gap + dj];
+        }
+
+        // Rotate arrays
+        [u_prev, u_curr, u_next] = [u_curr, u_next, u_prev];
+
+        time++;
+      }
+      //chnage
+      // Draw scaled
+      function draw() {
+        let image = ctx.createImageData(Nx, Ny);
+        for (let i = 0; i < Nx; i++) {
+          for (let j = 0; j < Ny; j++) {
             let val = u_curr[i][j];
             let color = Math.floor((val + 1) * 127.5); // [-1,1] → [0,255]
             let idx = 4 * (j * Nx + i);
             image.data[idx] = color;
-            image.data[idx+1] = color;
-            image.data[idx+2] = color;
-            image.data[idx+3] = 255;
+            image.data[idx + 1] = color;
+            image.data[idx + 2] = color;
+            image.data[idx + 3] = 255;
+          }
         }
-    }
-    // scale up
-    let offscreen = document.createElement("canvas");
-    offscreen.width = Nx;
-    offscreen.height = Ny;
-    offscreen.getContext("2d").putImageData(image, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(offscreen, 0, 0, Nx*scale, Ny*scale);
+        // scale up
+        let offscreen = document.createElement("canvas");
+        offscreen.width = Nx;
+        offscreen.height = Ny;
+        offscreen.getContext("2d").putImageData(image, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(offscreen, 0, 0, Nx * scale, Ny * scale);
+      }
 
-
-
-}
-
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-loop();
-</script>
-</body>
+      function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      }
+      loop();
+    </script>
+  </body>
 </html>
